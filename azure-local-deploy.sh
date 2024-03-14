@@ -1,0 +1,1 @@
+az webapp up --name wildsurf-now --location eastus --resource-group FreeResourceGroup --runtime NODE:20-lts
