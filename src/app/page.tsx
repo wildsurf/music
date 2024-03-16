@@ -1,8 +1,8 @@
 "use client";
 
 import styles from "./page.module.css";
-import { useRef, useState } from "react";
-import AudioPlayer, { AudioSelection } from "./audio-player";
+import { useEffect, useState } from "react";
+import AudioPlayer from "./audio-player";
 import Table from "@mui/material/Table";
 import TableCell from "@mui/material/TableCell";
 import TableHead from "@mui/material/TableHead";
@@ -11,10 +11,13 @@ import CardContent from "@mui/material/CardContent";
 import CardActions from "@mui/material/CardActions";
 import TableBody from "@mui/material/TableBody";
 import TableRow from "@mui/material/TableRow";
+import CardHeader from "@mui/material/CardHeader";
 import CheckBox from "@mui/material/Checkbox";
+import Box from "@mui/material/Box";
+import Radio from "@mui/material/Radio";
 import { styled } from "@mui/material";
+import { VOICES } from "./config";
 
-const VOICES = ["Sopran", "Alt", "Tenor", "Bass"];
 const StyledTableRow = styled(TableRow)(({ theme }) => ({
   "& td:first-child": {
     backgroundColor: theme.palette.action.hover,
@@ -23,56 +26,83 @@ const StyledTableRow = styled(TableRow)(({ theme }) => ({
 }));
 
 export default function Home() {
-  const [audioSelection, setAudioSelection] = useState<AudioSelection>({
-    selectedVoices: [...VOICES],
-    isSolo: false,
-    isFocus: false,
-  });
+  const [audioDuration, setAudioDuration] = useState<number>();
+  const [selectedVoices, setSelectedVoices] = useState<string[]>([...VOICES]);
+  const [soloVoice, setSoloVoice] = useState<string>();
+
+  useEffect(() => {
+    const audio = new Audio(`/audio/${VOICES[0]}.m4a`);
+
+    audio.oncanplaythrough = function () {
+      setAudioDuration(audio.duration);
+    };
+  }, []);
 
   const onSelectVoice = (voice: string, turnOn: boolean) => {
     if (turnOn) {
-      setAudioSelection({
-        ...audioSelection,
-        selectedVoices: [...audioSelection.selectedVoices, voice],
-      });
+      setSelectedVoices([...selectedVoices, voice]);
     } else {
-      setAudioSelection({
-        ...audioSelection,
-        selectedVoices: audioSelection.selectedVoices.filter(
-          (v) => v !== voice
-        ),
-      });
+      setSelectedVoices(selectedVoices.filter((v) => v !== voice));
     }
+  };
+
+  const toggleSolo = (voice: string) => {
+    setSelectedVoices([...VOICES]);
+    setSoloVoice(soloVoice === voice ? undefined : voice);
   };
 
   return (
     <main className={styles.main}>
-      <Card>
+      <Card
+        sx={(theme) => ({
+          margin: 3,
+          backgroundColor: theme.palette.background.paper,
+        })}
+      >
+        <CardHeader
+          title="Denn er hat seinen Engeln (Mendelssohn)"
+          subheader="4-stimmiger Satz von M. Sandner"
+        />
         <CardContent>
-          <Table>
+          <Table size="small" sx={{ tableLayout: "fixed" }}>
             <TableHead>
-              <TableRow>
-                <TableCell>Stimme</TableCell>
-                <TableCell>An</TableCell>
-                <TableCell>Solo</TableCell>
-                <TableCell>Fokus</TableCell>
+              <TableRow
+                sx={(theme) => ({
+                  backgroundColor: theme.palette.primary.main,
+                })}
+              >
+                <TableCell sx={{ color: "white" }}>Stimme</TableCell>
+                <TableCell sx={{ color: "white" }}>An</TableCell>
+                <TableCell sx={{ color: "white" }}>
+                  In den Vordergrund
+                </TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {VOICES.map((voice) => (
                 <StyledTableRow key={voice}>
-                  <TableCell>{voice}</TableCell>
+                  <TableCell>
+                    <Box display="flex" gap={1}>
+                      <span>{voice}</span>
+                      <a href={`/audio/${voice}.m4a`} download={true}>
+                        (Download)
+                      </a>
+                    </Box>
+                  </TableCell>
                   <TableCell>
                     <CheckBox
-                      checked={audioSelection.selectedVoices.includes(voice)}
+                      disabled={!!soloVoice}
+                      checked={selectedVoices.includes(voice)}
                       onChange={(_, state) => onSelectVoice(voice, state)}
+                      sx={{ marginLeft: -1.5 }}
                     />
                   </TableCell>
                   <TableCell>
-                    <CheckBox />
-                  </TableCell>
-                  <TableCell>
-                    <CheckBox />
+                    <Radio
+                      sx={{ marginLeft: -1.5 }}
+                      checked={soloVoice === voice}
+                      onClick={() => toggleSolo(voice)}
+                    />
                   </TableCell>
                 </StyledTableRow>
               ))}
@@ -80,7 +110,11 @@ export default function Home() {
           </Table>
         </CardContent>
         <CardActions>
-          <AudioPlayer audioSelection={audioSelection} voices={VOICES} />
+          <AudioPlayer
+            soloVoice={soloVoice}
+            selectedVoices={selectedVoices}
+            audioLength={audioDuration ?? 0}
+          />
         </CardActions>
       </Card>
     </main>

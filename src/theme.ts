@@ -10,6 +10,11 @@ const roboto = Roboto({
 });
 
 const theme = createTheme({
+  palette: {
+    background: {
+      paper: "aliceblue",
+    },
+  },
   typography: {
     fontFamily: roboto.style.fontFamily,
   },
