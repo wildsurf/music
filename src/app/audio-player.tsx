@@ -69,7 +69,7 @@ export default function AudioPlayer({
   useEffect(() => {
     audioRefs.current = {};
     VOICES.forEach((voice) => {
-      const audio = new Audio(`/audio/${voice}.m4a`);
+      const audio = new Audio(`/audio/${voice}.mp3`);
       audio.oncanplaythrough = function () {
         audioRefs.current[voice] = audio;
       };

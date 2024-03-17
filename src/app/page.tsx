@@ -31,7 +31,7 @@ export default function Home() {
   const [soloVoice, setSoloVoice] = useState<string>();
 
   useEffect(() => {
-    const audio = new Audio(`/audio/${VOICES[0]}.m4a`);
+    const audio = new Audio(`/audio/${VOICES[0]}.mp3`);
 
     audio.oncanplaythrough = function () {
       setAudioDuration(audio.duration);
@@ -84,7 +84,7 @@ export default function Home() {
                   <TableCell>
                     <Box display="flex" gap={1}>
                       <span>{voice}</span>
-                      <a href={`/audio/${voice}.m4a`} download={true}>
+                      <a href={`/audio/${voice}.mp3`} download={true}>
                         (Download)
                       </a>
                     </Box>
