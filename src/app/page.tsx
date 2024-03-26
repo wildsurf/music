@@ -17,6 +17,7 @@ import Box from "@mui/material/Box";
 import Radio from "@mui/material/Radio";
 import { styled } from "@mui/material";
 import { VOICES } from "./config";
+import TrackList from "./track-list";
 
 const StyledTableRow = styled(TableRow)(({ theme }) => ({
   "& td:first-child": {
@@ -64,50 +65,12 @@ export default function Home() {
           subheader="4-stimmiger Satz von M. Sandner"
         />
         <CardContent>
-          <Table size="small" sx={{ tableLayout: "fixed" }}>
-            <TableHead>
-              <TableRow
-                sx={(theme) => ({
-                  backgroundColor: theme.palette.primary.main,
-                })}
-              >
-                <TableCell sx={{ color: "white" }}>Stimme</TableCell>
-                <TableCell sx={{ color: "white" }}>An</TableCell>
-                <TableCell sx={{ color: "white" }}>
-                  In den Vordergrund
-                </TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {VOICES.map((voice) => (
-                <StyledTableRow key={voice}>
-                  <TableCell>
-                    <Box display="flex" gap={1}>
-                      <span>{voice}</span>
-                      <a href={`/audio/${voice}.mp3`} download={true}>
-                        (Download)
-                      </a>
-                    </Box>
-                  </TableCell>
-                  <TableCell>
-                    <CheckBox
-                      disabled={!!soloVoice}
-                      checked={selectedVoices.includes(voice)}
-                      onChange={(_, state) => onSelectVoice(voice, state)}
-                      sx={{ marginLeft: -1.5 }}
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <Radio
-                      sx={{ marginLeft: -1.5 }}
-                      checked={soloVoice === voice}
-                      onClick={() => toggleSolo(voice)}
-                    />
-                  </TableCell>
-                </StyledTableRow>
-              ))}
-            </TableBody>
-          </Table>
+          <TrackList
+            selectedVoices={selectedVoices}
+            soloVoice={soloVoice}
+            toggleSolo={toggleSolo}
+            onSelectVoice={onSelectVoice}
+          />
         </CardContent>
         <CardActions>
           <AudioPlayer
