@@ -1,0 +1,13 @@
+query audioCollection($limit: Int = 10) {
+  audioCollection(preview: true, limit: $limit) {
+    items {
+      fileName
+      type {
+        fileExtension
+      }
+      media {
+        url
+      }
+    }
+  }
+}

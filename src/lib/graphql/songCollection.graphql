@@ -1,0 +1,39 @@
+fragment VoiceFields on Voice {
+  name
+  audiosCollection(limit: $limit) {
+    items {
+      ...AudioFields
+    }
+  }
+}
+
+fragment SongFields on Song {
+  title
+  subheading
+  voicesCollection(limit: $limit) {
+    items {
+      ...VoiceFields
+    }
+  }
+}
+
+fragment AudioFields on Audio {
+  type {
+    fileExtension
+  }
+  media {
+    title
+    description
+    contentType
+    url
+    fileName
+  }
+}
+
+query songCollection($limit: Int = 10, $where: SongFilter) {
+  songCollection(preview: true, limit: $limit, where: $where) {
+    items {
+      ...SongFields
+    }
+  }
+}

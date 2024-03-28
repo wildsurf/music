@@ -1,5 +1,4 @@
 "use client";
-import { VOICES } from "./config";
 import List from "@mui/material/List";
 import {
   Box,
@@ -12,15 +11,18 @@ import {
 } from "@mui/material";
 import { Download, VolumeDown } from "@mui/icons-material";
 import { Fragment } from "react";
+import { VoiceFieldsFragment } from "@/lib/__generated/sdk";
 
 type Props = {
+  voices: VoiceFieldsFragment[];
   selectedVoices: string[];
   soloVoice?: string;
   onSelectVoice: (voice: string, turnOn: boolean) => void;
   toggleSolo: (voice: string) => void;
 };
 
-export default function TrackList({
+export default function VoicesList({
+  voices,
   selectedVoices,
   soloVoice,
   onSelectVoice,
@@ -39,11 +41,13 @@ export default function TrackList({
         padding: 0,
       }}
     >
-      {VOICES.map((voice) => {
-        const isVolumeOn = selectedVoices.includes(voice);
-        const isSoloVoice = voice === soloVoice;
+      {voices.map((voice) => {
+        const voiceName = voice.name ?? "";
+        const isVolumeOn = selectedVoices.includes(voiceName);
+        const isSoloVoice = voiceName === soloVoice;
+        const audios = voice.audiosCollection?.items ?? [];
         return (
-          <Fragment key={voice}>
+          <Fragment key={voiceName}>
             <ListItem
               sx={{
                 padding: 0,
@@ -61,12 +65,15 @@ export default function TrackList({
               >
                 <Box display={"flex"} sx={{ alignItems: "center" }}>
                   <IconButton
+                    disabled={!audios?.[0]?.media?.url}
                     aria-label="Download"
-                    href={`/audio/${voice}.mp3`}
+                    href={audios?.[0]?.media?.url ?? ""}
+                    download
+                    target="_blank"
                   >
                     <Download />
                   </IconButton>
-                  <Typography variant="h6">{voice}</Typography>
+                  <Typography variant="h6">{voiceName}</Typography>
                 </Box>
 
                 <Box display={"flex"} gap={1} sx={{ alignItems: "center" }}>
@@ -74,7 +81,7 @@ export default function TrackList({
                     variant="outlined"
                     size="small"
                     color={isSoloVoice ? "primary" : "info"}
-                    onClick={() => toggleSolo(voice)}
+                    onClick={() => toggleSolo(voiceName)}
                   >
                     Solo
                   </Button>
@@ -83,7 +90,7 @@ export default function TrackList({
                     aria-label="Volumen an/aus"
                     size="small"
                     variant="contained"
-                    onClick={() => onSelectVoice(voice, !isVolumeOn)}
+                    onClick={() => onSelectVoice(voiceName, !isVolumeOn)}
                     disabled={!!soloVoice}
                   >
                     <VolumeDown />

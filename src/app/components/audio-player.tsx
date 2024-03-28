@@ -5,20 +5,21 @@ import Button from "@mui/material/Button";
 import Box from "@mui/material/Box";
 import Chip from "@mui/material/Chip";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { VOICES } from "./config";
+import { VoiceFieldsFragment } from "@/lib/__generated/sdk";
 
 type Props = {
+  voices: VoiceFieldsFragment[];
   selectedVoices: string[];
-  audioLength: number;
   soloVoice?: string;
 };
 
 export default function AudioPlayer({
-  audioLength,
+  voices,
   selectedVoices,
   soloVoice,
 }: Props) {
   const audioRefs = useRef<Record<string, HTMLAudioElement | null>>({});
+  const [audioDuration, setAudioDuration] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [currentTimeFormatted, setCurrentTimeFormatted] = useState("");
@@ -28,8 +29,8 @@ export default function AudioPlayer({
       pause();
     }
 
-    VOICES.forEach((voice) => {
-      const audioElement = audioRefs.current?.[voice];
+    voices.forEach((voice) => {
+      const audioElement = audioRefs.current?.[voice.name!];
       if (audioElement) {
         audioElement.currentTime = position;
       }
@@ -42,38 +43,48 @@ export default function AudioPlayer({
 
   const play = useCallback(() => {
     setIsPlaying(true);
-    for (let i = 0; i < VOICES.length; i++) {
-      const voice = VOICES[i];
-      const audioElement = audioRefs.current?.[voice];
+    for (let i = 0; i < voices.length; i++) {
+      const voice = voices[i];
+      const voiceName = voice.name!;
+      const audioElement = audioRefs.current?.[voiceName];
+
       if (audioElement) {
         audioElement.play();
         if (!soloVoice) {
-          audioElement.volume = selectedVoices.includes(voice) ? 1 : 0;
-        } else if (voice === soloVoice) {
+          audioElement.volume = selectedVoices.includes(voiceName) ? 1 : 0;
+        } else if (voice.name === soloVoice) {
           audioElement.volume = 1;
         } else {
           audioElement.volume = 0.1;
         }
       }
     }
-  }, [selectedVoices, soloVoice]);
+  }, [selectedVoices, soloVoice, voices]);
 
   const pause = useCallback(() => {
     setIsPlaying(false);
-    VOICES.forEach((voice) => {
-      audioRefs.current?.[voice]?.pause();
+    voices.forEach((voice) => {
+      audioRefs.current?.[voice.name!]?.pause();
     });
-  }, []);
+  }, [voices]);
 
   // Load audio
   useEffect(() => {
     audioRefs.current = {};
-    VOICES.forEach((voice) => {
-      const audio = new Audio(`/audio/${voice}.mp3`);
+    voices.forEach((voice) => {
+      const audios =
+        voice.audiosCollection?.items.filter(
+          (a) => a?.type?.fileExtension === "mp3"
+        ) ?? [];
+
+      const audio = new Audio(audios[0]?.media?.url ?? "");
       audio.oncanplaythrough = function () {
-        audioRefs.current[voice] = audio;
+        audioRefs.current[voice.name ?? ""] = audio;
+        setAudioDuration(audio.duration);
       };
+      audio.onerror = console.error;
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Calculate formatted time based on current time
@@ -87,16 +98,16 @@ export default function AudioPlayer({
   // Keep time scroller up-to-date
   useEffect(() => {
     const interval = setInterval(() => {
-      const audioElement = audioRefs.current?.[VOICES[0]];
+      const audioElement = audioRefs.current?.[voices[0].name!];
 
       if (audioElement) {
         const currentTime = audioElement.currentTime;
         setCurrentTime(currentTime);
       }
-    }, 100);
+    }, 1000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [voices]);
 
   // update play based on the chosen voice settings
   useEffect(() => {
@@ -121,7 +132,7 @@ export default function AudioPlayer({
           <Slider
             value={currentTime}
             defaultValue={currentTime}
-            max={audioLength}
+            max={audioDuration}
             onChange={(_, value) => {
               setCurrentTime(value as number);
               sync(value as number);
