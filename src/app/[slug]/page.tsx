@@ -1,7 +1,7 @@
 import PageLayout from "../components/song";
 import { client, previewClient } from "@/lib/client";
 
-export const fetchSongCollection = async (preview: boolean, slug: string) => {
+const fetchSongCollection = async (preview: boolean, slug: string) => {
   const gqlClient = preview ? previewClient : client;
 
   try {
