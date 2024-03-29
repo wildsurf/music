@@ -4,8 +4,9 @@ import Slider from "@mui/material/Slider";
 import Button from "@mui/material/Button";
 import Box from "@mui/material/Box";
 import Chip from "@mui/material/Chip";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { VoiceFieldsFragment } from "@/lib/__generated/sdk";
+import { Mixer, TrackConfig } from "../utils/mixer";
 
 type Props = {
   voices: VoiceFieldsFragment[];
@@ -18,72 +19,54 @@ export default function AudioPlayer({
   selectedVoices,
   soloVoice,
 }: Props) {
-  const audioRefs = useRef<Record<string, HTMLAudioElement | null>>({});
+  const trackConfig: TrackConfig[] = useMemo(
+    () =>
+      voices.map((v) => {
+        return {
+          id: v.name!,
+          url:
+            v.audiosCollection?.items.filter(
+              (a) => a?.type?.fileExtension === "mp3"
+            )[0]?.media?.url ?? "",
+        };
+      }),
+    [voices]
+  );
+
   const [audioDuration, setAudioDuration] = useState(0);
-  const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [currentTimeFormatted, setCurrentTimeFormatted] = useState("");
 
-  const sync = (position: number) => {
-    if (isPlaying) {
-      pause();
-    }
+  const mixer = useRef<Mixer>();
 
+  const updateMixer = useCallback(() => {
     voices.forEach((voice) => {
-      const audioElement = audioRefs.current?.[voice.name!];
-      if (audioElement) {
-        audioElement.currentTime = position;
-      }
-    });
-
-    if (isPlaying) {
-      play();
-    }
-  };
-
-  const play = useCallback(() => {
-    setIsPlaying(true);
-    for (let i = 0; i < voices.length; i++) {
-      const voice = voices[i];
       const voiceName = voice.name!;
-      const audioElement = audioRefs.current?.[voiceName];
+      let volume = 0;
 
-      if (audioElement) {
-        audioElement.play();
-        if (!soloVoice) {
-          audioElement.volume = selectedVoices.includes(voiceName) ? 1 : 0;
-        } else if (voice.name === soloVoice) {
-          audioElement.volume = 1;
-        } else {
-          audioElement.volume = 0.1;
-        }
+      if (!soloVoice) {
+        volume = selectedVoices.includes(voiceName) ? 1 : 0;
+      } else if (voice.name === soloVoice) {
+        volume = 1;
+      } else {
+        volume = 0.2;
       }
-    }
+
+      mixer.current?.changeTrackVolume(voiceName, volume);
+    });
   }, [selectedVoices, soloVoice, voices]);
 
-  const pause = useCallback(() => {
-    setIsPlaying(false);
-    voices.forEach((voice) => {
-      audioRefs.current?.[voice.name!]?.pause();
-    });
-  }, [voices]);
-
-  // Load audio
+  // initialise the mixer
   useEffect(() => {
-    audioRefs.current = {};
-    voices.forEach((voice) => {
-      const audios =
-        voice.audiosCollection?.items.filter(
-          (a) => a?.type?.fileExtension === "mp3"
-        ) ?? [];
+    const setCurrentTimeRounded = (progress: number) => {
+      setCurrentTime(Math.round(progress * 10) / 10);
+    };
 
-      const audio = new Audio(audios[0]?.media?.url ?? "");
-      audio.oncanplaythrough = function () {
-        audioRefs.current[voice.name ?? ""] = audio;
-        setAudioDuration(audio.duration);
-      };
-      audio.onerror = console.error;
-    });
+    mixer.current = new Mixer(
+      trackConfig,
+      setAudioDuration,
+      setCurrentTimeRounded
+    );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -95,27 +78,12 @@ export default function AudioPlayer({
     setCurrentTimeFormatted(`${mins}:${seconds}`);
   }, [currentTime]);
 
-  // Keep time scroller up-to-date
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const audioElement = audioRefs.current?.[voices[0].name!];
-
-      if (audioElement) {
-        const currentTime = audioElement.currentTime;
-        setCurrentTime(currentTime);
-      }
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [voices]);
-
   // update play based on the chosen voice settings
   useEffect(() => {
-    if (isPlaying) {
-      pause();
-      play();
+    if (audioDuration) {
+      updateMixer();
     }
-  }, [selectedVoices, soloVoice, play, pause, isPlaying]);
+  }, [selectedVoices, soloVoice, updateMixer, audioDuration]);
 
   return (
     <Box sx={{ marginX: 1, width: "100%" }}>
@@ -130,12 +98,13 @@ export default function AudioPlayer({
       >
         <Box sx={{ marginX: 2 }}>
           <Slider
+            disabled={audioDuration === 0}
             value={currentTime}
             defaultValue={currentTime}
             max={audioDuration}
             onChange={(_, value) => {
               setCurrentTime(value as number);
-              sync(value as number);
+              mixer.current?.changePlayHead(value as number);
             }}
           />
         </Box>
@@ -143,14 +112,19 @@ export default function AudioPlayer({
       </Box>
 
       <Box display="flex" gap={2} sx={{ marginY: 3 }}>
-        <Button variant="contained" endIcon={<PlayArrowIcon />} onClick={play}>
+        <Button
+          variant="contained"
+          endIcon={<PlayArrowIcon />}
+          onClick={() => mixer.current?.play()}
+          disabled={audioDuration === 0}
+        >
           Abspielen
         </Button>
         <Button
           variant="contained"
           color="secondary"
           endIcon={<PlayArrowIcon />}
-          onClick={pause}
+          onClick={() => mixer.current?.stop()}
         >
           Pause
         </Button>

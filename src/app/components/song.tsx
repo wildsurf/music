@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import AudioPlayer from "./audio-player";
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
