@@ -8,6 +8,7 @@ export default class Track {
   buffer?: AudioBuffer;
   sourceNode?: AudioBufferSourceNode;
   gainNode?: GainNode;
+  gain: number;
 
   constructor(
     context: AudioContext,
@@ -17,6 +18,7 @@ export default class Track {
   ) {
     this.id = id;
     this.context = context;
+    this.gain = 1;
 
     this.load(url, loadedCallback);
   }
@@ -44,9 +46,7 @@ export default class Track {
     }
     this.gainNode = this.context.createGain();
     this.sourceNode.connect(this.gainNode).connect(this.context.destination);
-    this.sourceNode.onended = () => {
-      this.disconnect();
-    };
+    this.gainNode.gain.value = this.gain;
   }
 
   play(position = 0) {
@@ -59,13 +59,9 @@ export default class Track {
     this.sourceNode?.stop();
   }
 
-  disconnect() {
-    this.sourceNode?.disconnect();
-    this.gainNode?.disconnect();
-  }
-
   setVolume(volume: number) {
     if (this.gainNode) {
+      this.gain = volume;
       this.gainNode.gain.value = volume;
     }
   }
