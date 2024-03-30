@@ -9,11 +9,13 @@ import {
   Typography,
   useTheme,
 } from "@mui/material";
+import Skeleton from "@mui/material/Skeleton";
 import { Download, VolumeDown } from "@mui/icons-material";
 import { Fragment } from "react";
 import { VoiceFieldsFragment } from "@/lib/__generated/sdk";
 
 type Props = {
+  loading: boolean;
   voices: VoiceFieldsFragment[];
   selectedVoices: string[];
   soloVoice?: string;
@@ -22,6 +24,7 @@ type Props = {
 };
 
 export default function VoicesList({
+  loading,
   voices,
   selectedVoices,
   soloVoice,
@@ -41,11 +44,24 @@ export default function VoicesList({
         padding: 0,
       }}
     >
-      {voices.map((voice) => {
+      {voices.map((voice, index) => {
         const voiceName = voice.name ?? "";
         const isVolumeOn = selectedVoices.includes(voiceName);
         const isSoloVoice = voiceName === soloVoice;
         const audios = voice.audiosCollection?.items ?? [];
+        if (loading) {
+          return (
+            <Box
+              key={voiceName}
+              sx={{
+                padding: 1,
+                paddingTop: index ? 0 : 1,
+              }}
+            >
+              <Skeleton variant="rounded" width={"100%"} height={60} />
+            </Box>
+          );
+        }
         return (
           <Fragment key={voiceName}>
             <ListItem

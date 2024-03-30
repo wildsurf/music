@@ -12,12 +12,14 @@ type Props = {
   voices: VoiceFieldsFragment[];
   selectedVoices: string[];
   soloVoice?: string;
+  onLoaded: (loaded: boolean) => void;
 };
 
 export default function AudioPlayer({
   voices,
   selectedVoices,
   soloVoice,
+  onLoaded,
 }: Props) {
   const trackConfig: TrackConfig[] = useMemo(
     () =>
@@ -62,14 +64,17 @@ export default function AudioPlayer({
     const setCurrentTimeRounded = (progress: number) => {
       setCurrentTime(Math.round(progress * 10) / 10);
     };
+    const onLoadCallback = (duration: number) => {
+      setAudioDuration(duration);
+      onLoaded(true);
+    };
 
     mixer.current = new Mixer(
       trackConfig,
-      setAudioDuration,
+      onLoadCallback,
       setCurrentTimeRounded
     );
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [onLoaded, trackConfig]);
 
   // Calculate formatted time based on current time
   useEffect(() => {

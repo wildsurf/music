@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import AudioPlayer from "./audio-player";
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
@@ -7,17 +7,21 @@ import CardActions from "@mui/material/CardActions";
 import CardHeader from "@mui/material/CardHeader";
 import VoicesList from "./voices-list";
 import { SongFieldsFragment, VoiceFieldsFragment } from "@/lib/__generated/sdk";
+import Alert from "@mui/material/Alert";
 
 type Props = {
   song: SongFieldsFragment;
 };
 
 export default function PageLayout({ song }: Props) {
-  const voices = (song.voicesCollection?.items ?? []).filter(
-    (v) => !!v
-  ) as VoiceFieldsFragment[];
-  const voiceNames = voices.map((v) => v.name ?? "");
+  const voices = useRef<VoiceFieldsFragment[]>(
+    (song.voicesCollection?.items ?? []).filter(
+      (v) => !!v
+    ) as VoiceFieldsFragment[]
+  );
+  const voiceNames = voices.current.map((v) => v.name ?? "");
 
+  const [musicLoaded, setMusicLoaded] = useState(false);
   const [selectedVoices, setSelectedVoices] = useState<string[]>([
     ...voiceNames,
   ]);
@@ -46,8 +50,10 @@ export default function PageLayout({ song }: Props) {
       >
         <CardHeader title={song.title} subheader={song.subheading} />
         <CardContent>
+          {!musicLoaded && <Alert severity="info">Lade Audios...</Alert>}
           <VoicesList
-            voices={voices}
+            loading={!musicLoaded}
+            voices={voices.current}
             selectedVoices={selectedVoices}
             soloVoice={soloVoice}
             toggleSolo={toggleSolo}
@@ -56,7 +62,8 @@ export default function PageLayout({ song }: Props) {
         </CardContent>
         <CardActions>
           <AudioPlayer
-            voices={voices}
+            onLoaded={setMusicLoaded}
+            voices={voices.current}
             soloVoice={soloVoice}
             selectedVoices={selectedVoices}
           />
