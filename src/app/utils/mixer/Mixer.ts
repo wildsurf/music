@@ -5,6 +5,7 @@ import Track from "./Track";
 export type TrackConfig = {
   url: string;
   id: string;
+  type: string;
 };
 
 export type LoadedCallback = (duration: number) => void;
@@ -19,8 +20,11 @@ export default class Mixer {
   startedAt: number;
   progressMilliseconds: number;
   playing: boolean;
+  hiddenAudio?: HTMLAudioElement;
   onTracksLoaded: LoadedCallback;
   onProgressChanged: ProgressChangedCallback;
+  hiddenTrack?: MediaElementAudioSourceNode;
+  hiddenGainNode?: GainNode;
 
   constructor(
     trackConfig: TrackConfig[],
@@ -70,17 +74,42 @@ export default class Mixer {
     this.tracks[id] = new Track(this.context, url, id, onTrackLoaded);
   }
 
+  connectAudioHackForIphone() {
+    if (!this.hiddenAudio) {
+      this.hiddenAudio = document.getElementById(
+        "hidden-audio"
+      ) as HTMLAudioElement;
+      this.hiddenTrack = this.context.createMediaElementSource(
+        this.hiddenAudio
+      );
+      this.hiddenGainNode = this.context.createGain();
+      this.hiddenGainNode.gain.value = 0;
+      this.hiddenTrack
+        .connect(this.hiddenGainNode)
+        .connect(this.context.destination);
+    }
+  }
+
   play() {
+    this.context.resume();
     this.playing = true;
     this.startedAt = Date.now() - this.progressMilliseconds;
     Object.values(this.tracks).forEach((track) =>
       track.play(this.progressMilliseconds / 1000)
     );
+    this.connectAudioHackForIphone();
+    if (this.hiddenAudio) {
+      this.hiddenAudio.currentTime = 0;
+      this.hiddenAudio.play();
+    }
   }
 
   stop() {
     this.playing = false;
     Object.values(this.tracks).forEach((track) => track.stop());
+    if (this.hiddenAudio) {
+      this.hiddenAudio.pause();
+    }
   }
 
   changeTrackVolume(id: string, volume: number) {

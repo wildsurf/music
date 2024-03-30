@@ -22,12 +22,13 @@ export default function AudioPlayer({
   const trackConfig: TrackConfig[] = useMemo(
     () =>
       voices.map((v) => {
+        const media = v.audiosCollection?.items.filter(
+          (a) => a?.type?.fileExtension === "mp3"
+        )[0]?.media;
         return {
           id: v.name!,
-          url:
-            v.audiosCollection?.items.filter(
-              (a) => a?.type?.fileExtension === "mp3"
-            )[0]?.media?.url ?? "",
+          url: media?.url ?? "",
+          type: media?.contentType ?? "",
         };
       }),
     [voices]
@@ -87,6 +88,10 @@ export default function AudioPlayer({
 
   return (
     <Box sx={{ marginX: 1, width: "100%" }}>
+      <audio controls id="hidden-audio" style={{ display: "none" }}>
+        <source src={trackConfig[0].url} type={trackConfig[0].type} />
+        Your browser does not support the audio tag.
+      </audio>
       <Box
         flex="column"
         sx={(theme) => ({
